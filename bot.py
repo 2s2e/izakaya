@@ -33,6 +33,9 @@ class Bot:
     def listen(self, user_input):
         self.history.append({"role": "user", "content": user_input})
 
+    def get_history(self):
+        return self.history
+
     def reset_history(self):
         self.history = [{"role": "system", "content": self.prompt}]
         pass

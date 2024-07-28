@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 def convert_history_to_string(history):
     return "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
 
@@ -34,3 +37,19 @@ def get_conversation_prompt():
     )
 
     return conversation_prompt
+
+
+def save_session(conversation_string, feedback_string):
+    filename = "conversations/{}.txt".format(
+        datetime.now().strftime("transcript %Y-%m-%d_%H-%M-%S")
+    )
+
+    filename2 = "conversations/{}.txt".format(
+        datetime.now().strftime("feedback %Y-%m-%d_%H-%M-%S")
+    )
+
+    with open(filename, "w", encoding="utf-8") as file:
+        file.write(conversation_string)
+
+    with open(filename2, "w", encoding="utf-8") as file:
+        file.write(feedback_string)
