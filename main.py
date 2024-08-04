@@ -1,5 +1,4 @@
 from datetime import datetime
-from dialogue import ChineseConversationAgent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from colorama import Fore, Back, Style
 
@@ -10,6 +9,8 @@ import os
 import iza_utils
 import time
 from bot import Bot
+
+from scenario import generate_context, generate_character, generate_packaged_prompt
 
 # while True:
 #     orig_prompt = """
@@ -36,13 +37,14 @@ MODEL = "gpt-4o"
 MAX_CONVERSATION_LENGTH = 3
 languages = ["Japanese", "Chinese", "Korean"]
 
-conversation_prompt = iza_utils.get_conversation_prompt()
+target = iza_utils.get_target()
+conversation_prompt = generate_packaged_prompt(target)
 
-conv_bot = Bot(prompt=conversation_prompt)
+conv_bot = Bot(prompt=conversation_prompt, temperature=0.4)
 
 # response = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": orig_prompt}])
 
-while len(conv_bot.history) < MAX_CONVERSATION_LENGTH:
+while len(conv_bot.get_history()) < MAX_CONVERSATION_LENGTH:
     # bot response
     response = conv_bot.speak()
     print(Fore.LIGHTCYAN_EX + "Bot:", response)
@@ -53,14 +55,14 @@ while len(conv_bot.history) < MAX_CONVERSATION_LENGTH:
     print(Style.RESET_ALL)
     conv_bot.listen(user_input)
 
-history_for_review = iza_utils.convert_history_to_string(conv_bot.history)
+history_for_review = iza_utils.convert_history_to_string(conv_bot.get_history())
 
 
 correction_prompt = """
 Please review the conversation below and correct any mistakes made by the user.
 {history}
 
-Give an overall evaluation of how the user drid, and then please deep dive into each specific mistake made by the user.
+Give an overall evaluation of how the user did, and then please deep dive into each specific mistake made by the user.
 You should give this evaluation as if you are talking to the user, because you are. 
 
 Give the evaluation in ENGLISH please
@@ -75,7 +77,7 @@ print(Fore.LIGHTMAGENTA_EX + "Bot:", response)
 print(Style.RESET_ALL)
 
 feedback = response
-shortened = conv_bot.history[1:]
+shortened = conv_bot.get_history()[1:]
 conversation = iza_utils.convert_history_to_string(shortened)
 
 iza_utils.save_session(conversation, feedback)

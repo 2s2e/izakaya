@@ -1,8 +1,39 @@
 from datetime import datetime
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, BaseMessage
 
 
-def convert_history_to_string(history):
-    return "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+def convert_history_to_string(history: list[BaseMessage]) -> str:
+    message_string = ""
+    for message in history:
+        if isinstance(message, AIMessage):
+            message_type = "AI"
+        elif isinstance(message, HumanMessage):
+            message_type = "Human"
+        elif isinstance(message, SystemMessage):
+            message_type = "System"
+        else:
+            message_type = "Unknown"
+
+        message_string += f"{message_type}: {message.content}\n"
+    return message_string.strip()
+
+
+def get_target():
+    print("Choose a target skill:")
+    possible_targets = [
+        "Vocabulary: work related conversation",
+        "Grammar: comparison",
+        "Grammar: past tense",
+    ]
+
+    for i, target in enumerate(possible_targets):
+        print(f"{i + 1}. {target}")
+
+    target_choice = (
+        int(input("Enter the number of the target you want to choose: ")) - 1
+    )
+
+    return possible_targets[target_choice]
 
 
 def get_conversation_prompt():
