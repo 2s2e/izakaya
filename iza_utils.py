@@ -24,6 +24,7 @@ def get_target():
         "Vocabulary: work related conversation",
         "Grammar: comparison",
         "Grammar: past tense",
+        "Pick my own target skill",
     ]
 
     for i, target in enumerate(possible_targets):
@@ -33,6 +34,10 @@ def get_target():
         int(input("Enter the number of the target you want to choose: ")) - 1
     )
 
+    if target_choice == 3:
+        custom_target = input("Enter your own target skill: ")
+        return custom_target
+
     return possible_targets[target_choice]
 
 
@@ -41,6 +46,7 @@ def get_conversation_prompt():
         "Vocabulary: work related conversation",
         "Grammar: comparison",
         "Grammar: past tense",
+        "Pick my own",
     ]
 
     print("Choose a topic:")
@@ -70,7 +76,7 @@ def get_conversation_prompt():
     return conversation_prompt
 
 
-def save_session(conversation_string, feedback_string):
+def save_session(conversation_string, feedback_string, prompt_string):
     filename = "conversations/{}.txt".format(
         datetime.now().strftime("transcript %Y-%m-%d_%H-%M-%S")
     )
@@ -79,8 +85,15 @@ def save_session(conversation_string, feedback_string):
         datetime.now().strftime("feedback %Y-%m-%d_%H-%M-%S")
     )
 
+    filename3 = "conversations/{}.txt".format(
+        datetime.now().strftime("prompt %Y-%m-%d_%H-%M-%S")
+    )
+
     with open(filename, "w", encoding="utf-8") as file:
         file.write(conversation_string)
 
     with open(filename2, "w", encoding="utf-8") as file:
         file.write(feedback_string)
+
+    with open(filename3, "w", encoding="utf-8") as file:
+        file.write(prompt_string)

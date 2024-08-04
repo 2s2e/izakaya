@@ -34,16 +34,14 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 print(Style.RESET_ALL)
 
 MODEL = "gpt-4o"
-MAX_CONVERSATION_LENGTH = 3
-languages = ["Japanese", "Chinese", "Korean"]
+MAX_CONVERSATION_LENGTH = 9
 
 target = iza_utils.get_target()
-conversation_prompt = generate_packaged_prompt(target)
+conversation_prompt, summary = generate_packaged_prompt(target, level="beginner")
 
-conv_bot = Bot(prompt=conversation_prompt, temperature=0.4)
+print(Fore.LIGHTYELLOW_EX + summary + Style.RESET_ALL)
 
-# response = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": orig_prompt}])
-
+conv_bot = Bot(prompt=conversation_prompt, temperature=0.3)
 while len(conv_bot.get_history()) < MAX_CONVERSATION_LENGTH:
     # bot response
     response = conv_bot.speak()
@@ -67,7 +65,7 @@ You should give this evaluation as if you are talking to the user, because you a
 
 Give the evaluation in ENGLISH please
 """.format(
-    history=history_for_review, language=languages[0]
+    history=history_for_review, language="Japanese"
 )
 
 correction_bot = Bot(prompt=correction_prompt)
@@ -80,4 +78,4 @@ feedback = response
 shortened = conv_bot.get_history()[1:]
 conversation = iza_utils.convert_history_to_string(shortened)
 
-iza_utils.save_session(conversation, feedback)
+iza_utils.save_session(conversation, feedback, conversation_prompt)

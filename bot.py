@@ -4,7 +4,7 @@ import os
 import iza_utils
 import time
 from colorama import Fore, Back, Style
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import ResponseSchema
 from langchain.output_parsers import StructuredOutputParser
