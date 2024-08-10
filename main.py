@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 import iza_utils
 import time
-from bot import Bot
+from bot import Bot, TutorBot
 
 from scenario import generate_context, generate_character, generate_packaged_prompt
 
@@ -41,7 +41,7 @@ conversation_prompt, summary = generate_packaged_prompt(target, level="beginner"
 
 print(Fore.LIGHTYELLOW_EX + summary + Style.RESET_ALL)
 
-conv_bot = Bot(prompt=conversation_prompt, temperature=0.3)
+conv_bot = TutorBot(prompt=conversation_prompt, temperature=0.3)
 while len(conv_bot.get_history()) < MAX_CONVERSATION_LENGTH:
     # bot response
     response = conv_bot.speak()
