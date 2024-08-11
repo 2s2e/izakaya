@@ -34,7 +34,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 print(Style.RESET_ALL)
 
 MODEL = "gpt-4o"
-MAX_CONVERSATION_LENGTH = 9
+MAX_CONVERSATION_LENGTH = 3
 
 target = iza_utils.get_target()
 conversation_prompt, summary = generate_packaged_prompt(target, level="beginner")

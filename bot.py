@@ -55,9 +55,13 @@ class TutorBot(Bot):
     def __init__(self, prompt, model="gpt-4o", temperature=0.5):
         super().__init__(prompt, model, temperature)
         self.help_prompt = """
-        You are a Japanese coach who is assisting a student with a Japanese conversation.
+        You are a Japanese coach, and a student has just asked you for assistance with a conversation they are having with the practice partner.
 
         The student has just asked you a question, and you respond in a way that will help them with their Japanese skills. 
+
+        Respond as if you are teaching someone who's mother tongue is English please, and you are teaching them Japanese.
+
+        Start you sentence an encouraging remark in English. 
         """
         self.help_history = []
         self.help_history.append(SystemMessage(content=self.help_prompt))
@@ -78,7 +82,6 @@ class TutorBot(Bot):
     def listen(self, user_input):
         self.help_history.append(HumanMessage(content=user_input))
         if detect(user_input) != "en":
-            print("Inputted language is not English")
             self.history.append(HumanMessage(content=user_input))
 
     def get_history(self):
