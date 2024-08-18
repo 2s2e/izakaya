@@ -1,8 +1,10 @@
 from datetime import datetime
+import io
 from pathlib import Path
 import threading
 import wave
 import sounddevice as sd
+import soundfile as sf
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from colorama import Fore, Back, Style
 
@@ -25,6 +27,7 @@ recording_stop = False
 
 def record_audio(filename="output.wav", fs=44100):
     global recording_stop
+    recording_stop = False
     print("Please speak... Press Enter to stop recording.")
 
     # Start a thread to monitor for a keypress
@@ -34,7 +37,7 @@ def record_audio(filename="output.wav", fs=44100):
 
     while not recording_stop:
         # Record in small chunks
-        chunk = sd.rec(int(fs * 0.1), samplerate=fs, channels=1, dtype="int16")
+        chunk = sd.rec(int(fs * 5), samplerate=fs, channels=1, dtype="int16")
         sd.wait()  # Wait until the chunk is finished
         recording.append(chunk)
 
@@ -58,10 +61,14 @@ def stop_recording_on_keypress():
 
 # Function to transcribe audio using Whisper API
 def transcribe_audio(file_path):
+    client = OpenAI()
     openai.api_key = os.getenv("OPENAI_API_KEY")
+    transcript = None
     with open(file_path, "rb") as audio_file:
-        transcript = openai.Audio.transcribe("whisper-1", audio_file)
-    return transcript["text"]
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1", file=audio_file, language="ja"
+        )
+    return transcript.text
 
 
 def type_loop(conv_bot, max_length):
@@ -85,27 +92,38 @@ def speech_loop(conv_bot, max_length):
 
         # get the response from the bot
         text_response = conv_bot.speak()
-        print(Fore.LIGHTCYAN_EX + "Bot:", text_response, Style.RESET_ALL)
-        # get the audio stream
         response = client.audio.speech.create(
             model="tts-1", voice="alloy", input=text_response
         )
-        # output audio stream
-        stream = p.open(
-            format=pyaudio.paInt16,
-            channels=1,
-            rate=44100,  # This rate should match the TTS output rate
-            output=True,
-        )
-        # Stream the audio data directly to the playback stream
-        for (
-            chunk
-        ) in (
-            response.iter_bytes()
-        ):  # Assume the response supports a `.stream()` generator
-            stream.write(chunk)
-        stream.stop_stream()
-        stream.close()
+        print(Fore.LIGHTCYAN_EX + "Bot:", text_response, Style.RESET_ALL)
+
+        buffer = io.BytesIO()
+        for chunk in response.iter_bytes(chunk_size=4096):
+            buffer.write(chunk)
+        buffer.seek(0)
+
+        with sf.SoundFile(buffer, "r") as sound_file:
+            data = sound_file.read(dtype="int16")
+            sd.play(data, sound_file.samplerate)
+            sd.wait()
+        # get the audio stream
+
+        # # output audio stream
+        # stream = p.open(
+        #     format=pyaudio.paInt16,
+        #     channels=1,
+        #     rate=44100,  # This rate should match the TTS output rate
+        #     output=True,
+        # )
+        # # Stream the audio data directly to the playback stream
+        # for (
+        #     chunk
+        # ) in (
+        #     response.iter_bytes()
+        # ):  # Assume the response supports a `.stream()` generator
+        #     stream.write(chunk)
+        # stream.stop_stream()
+        # stream.close()
 
         ### user response
         record_audio()
