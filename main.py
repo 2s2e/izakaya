@@ -11,6 +11,7 @@ import time
 from bot import Bot, TutorBot
 
 from scenario import generate_context, generate_character, generate_packaged_prompt
+from loops import type_loop, speech_loop
 
 # while True:
 #     orig_prompt = """
@@ -43,15 +44,16 @@ print(Fore.LIGHTYELLOW_EX + summary + Style.RESET_ALL)
 
 conv_bot = TutorBot(prompt=conversation_prompt, temperature=0.3)
 while len(conv_bot.get_history()) < MAX_CONVERSATION_LENGTH:
-    # bot response
-    response = conv_bot.speak()
-    print(Fore.LIGHTCYAN_EX + "Bot:", response)
-    print(Style.RESET_ALL)
+    # # bot response
+    # response = conv_bot.speak()
+    # print(Fore.LIGHTCYAN_EX + "Bot:", response)
+    # print(Style.RESET_ALL)
 
-    # user response
-    user_input = input(Fore.LIGHTWHITE_EX + "User: ")
-    print(Style.RESET_ALL)
-    conv_bot.listen(user_input)
+    # # user response
+    # user_input = input(Fore.LIGHTWHITE_EX + "User: ")
+    # print(Style.RESET_ALL)
+    # conv_bot.listen(user_input)
+    speech_loop(conv_bot, MAX_CONVERSATION_LENGTH)
 
 history_for_review = iza_utils.convert_history_to_string(conv_bot.get_history())
 
