@@ -77,15 +77,15 @@ def get_conversation_prompt():
 
 
 def save_session(conversation_string, feedback_string, prompt_string):
-    filename = "conversations/{}.txt".format(
+    filename = "../conversations/{}.txt".format(
         datetime.now().strftime("transcript %Y-%m-%d_%H-%M-%S")
     )
 
-    filename2 = "conversations/{}.txt".format(
+    filename2 = "../conversations/{}.txt".format(
         datetime.now().strftime("feedback %Y-%m-%d_%H-%M-%S")
     )
 
-    filename3 = "conversations/{}.txt".format(
+    filename3 = "../conversations/{}.txt".format(
         datetime.now().strftime("prompt %Y-%m-%d_%H-%M-%S")
     )
 

@@ -35,7 +35,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 print(Style.RESET_ALL)
 
 MODEL = "gpt-4o"
-MAX_CONVERSATION_LENGTH = 11
+MAX_CONVERSATION_LENGTH = 5
 
 print("Demoing new feature? \n 1. yes \n 2. no")
 demo_choice = input("Choose an option: \n")
