@@ -102,10 +102,3 @@ def generate_packaged_prompt(target, level="N4"):
     bot.listen(prompt2)
     response2 = bot.speak()
     return prompt, response2
-
-
-if __name__ == "__main__":
-    target = "Vocabulary: work related conversation"
-    context = generate_context(target)
-    # print(context)
-    # print(generate_character(context))

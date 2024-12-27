@@ -11,7 +11,7 @@ import time
 from bot import Bot, TutorBot
 
 from scenario import generate_context, generate_character, generate_packaged_prompt
-from loops import type_loop, speech_loop
+from loops import type_loop, speech_loop, main_loop, review_loop
 
 # while True:
 #     orig_prompt = """
@@ -35,59 +35,24 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 print(Style.RESET_ALL)
 
 MODEL = "gpt-4o"
-MAX_CONVERSATION_LENGTH = 5
+MAX_CONVERSATION_LENGTH = 3
 
-print("Demoing new feature? \n 1. yes \n 2. no")
+# new options menu
+
+print(
+    "Please select an option: \n 1. Start text conversation \n 2. Start voice conversation \n 3. Review a previous session"
+)
 demo_choice = input("Choose an option: \n")
 
-is_demoing = False
+
+# is_demoing = False
+# if demo_choice == "1":
+#     is_demoing = True
+
+# driver
 if demo_choice == "1":
-    is_demoing = True
-
-target = iza_utils.get_target()
-conversation_prompt, summary = generate_packaged_prompt(target, level="beginner")
-
-print(Fore.LIGHTYELLOW_EX + summary + Style.RESET_ALL)
-
-conv_bot = TutorBot(prompt=conversation_prompt, temperature=0.3)
-while len(conv_bot.get_history()) < MAX_CONVERSATION_LENGTH:
-    # # bot response
-    # response = conv_bot.speak()
-    # print(Fore.LIGHTCYAN_EX + "Bot:", response)
-    # print(Style.RESET_ALL)
-
-    # # user response
-    # user_input = input(Fore.LIGHTWHITE_EX + "User: ")
-    # print(Style.RESET_ALL)
-    # conv_bot.listen(user_input)
-    if is_demoing:
-        speech_loop(conv_bot, MAX_CONVERSATION_LENGTH)
-    else:
-        type_loop(conv_bot, MAX_CONVERSATION_LENGTH)
-
-history_for_review = iza_utils.convert_history_to_string(conv_bot.get_history())
-
-
-correction_prompt = """
-Please review the conversation below and correct any mistakes made by the user.
-{history}
-
-Give an overall evaluation of how the user did, and then please deep dive into each specific mistake made by the user.
-You should give this evaluation as if you are talking to the user, because you are. 
-
-Give the evaluation in ENGLISH please
-""".format(
-    history=history_for_review, language="Japanese"
-)
-
-correction_bot = Bot(prompt=correction_prompt)
-
-response = correction_bot.speak()
-print(Fore.LIGHTMAGENTA_EX + "Bot:", response)
-print(Style.RESET_ALL)
-
-feedback = response
-shortened = conv_bot.get_history()[1:]
-conversation = iza_utils.convert_history_to_string(shortened)
-
-iza_utils.save_session(conversation, feedback, conversation_prompt)
+    main_loop()
+elif demo_choice == "2":
+    main_loop(True)
+elif demo_choice == "3":
+    review_loop()

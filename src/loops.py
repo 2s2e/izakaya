@@ -3,6 +3,7 @@ import io
 from pathlib import Path
 import threading
 import wave
+from langdetect import detect
 import sounddevice as sd
 import soundfile as sf
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -18,7 +19,7 @@ import iza_utils
 import time
 import pyaudio
 import numpy as np
-from bot import Bot, TutorBot
+from bot import Bot, TutorBot, ReviewBot
 
 from scenario import generate_context, generate_character, generate_packaged_prompt
 
@@ -71,6 +72,7 @@ def transcribe_audio(file_path):
     return transcript.text
 
 
+# loop for doing a typed conversation
 def type_loop(conv_bot, max_length):
     while len(conv_bot.get_history()) < max_length:
         # bot response
@@ -84,6 +86,7 @@ def type_loop(conv_bot, max_length):
         conv_bot.listen(user_input)
 
 
+# loop for doing a spoken conversation
 def speech_loop(conv_bot, max_length):
     client = OpenAI()
     p = pyaudio.PyAudio()
@@ -106,24 +109,6 @@ def speech_loop(conv_bot, max_length):
             data = sound_file.read(dtype="int16")
             sd.play(data, sound_file.samplerate)
             sd.wait()
-        # get the audio stream
-
-        # # output audio stream
-        # stream = p.open(
-        #     format=pyaudio.paInt16,
-        #     channels=1,
-        #     rate=44100,  # This rate should match the TTS output rate
-        #     output=True,
-        # )
-        # # Stream the audio data directly to the playback stream
-        # for (
-        #     chunk
-        # ) in (
-        #     response.iter_bytes()
-        # ):  # Assume the response supports a `.stream()` generator
-        #     stream.write(chunk)
-        # stream.stop_stream()
-        # stream.close()
 
         ### user response
         record_audio()
@@ -132,6 +117,90 @@ def speech_loop(conv_bot, max_length):
         conv_bot.listen(user_input)
 
     p.terminate()
+
+
+# loop for putting it all together
+def main_loop(is_audio=False):
+    # get the targeted skill, the prompt for the conversation
+    target = iza_utils.get_target()
+    conversation_prompt, summary = generate_packaged_prompt(target, level="beginner")
+
+    # setup
+    print(Fore.LIGHTYELLOW_EX + summary + Style.RESET_ALL)
+    conv_bot = TutorBot(prompt=conversation_prompt, temperature=0.3)
+
+    # get the conversation length from environment
+    MAX_CONVERSATION_LENGTH = int(os.getenv("MAX_CONVERSATION_LENGTH"))
+
+    while len(conv_bot.get_history()) < MAX_CONVERSATION_LENGTH:
+
+        if is_audio:
+            speech_loop(conv_bot, MAX_CONVERSATION_LENGTH)
+        else:
+            type_loop(conv_bot, MAX_CONVERSATION_LENGTH)
+
+    history_for_review = iza_utils.convert_history_to_string(conv_bot.get_history())
+
+    correction_prompt = """
+    Please review the conversation below and correct any mistakes made by the user.
+    {history}
+
+    Give an overall evaluation of how the user did, and then please deep dive into each specific mistake made by the user.
+    You should give this evaluation as if you are talking to the user, because you are. 
+
+    Give the evaluation in ENGLISH please
+    """.format(
+        history=history_for_review, language="Japanese"
+    )
+
+    correction_bot = Bot(prompt=correction_prompt)
+
+    response = correction_bot.speak()
+    print(Fore.LIGHTMAGENTA_EX + "Bot:", response)
+    print(Style.RESET_ALL)
+
+    feedback = response
+    shortened = conv_bot.get_history()[1:]
+
+    iza_utils.save_session(shortened, feedback, conversation_prompt)
+
+
+def review_loop():
+    conversation, _, prompt = iza_utils.get_session_to_review()
+    review_bot = ReviewBot(prompt=prompt)
+
+    i = 0
+    while i < len(conversation):
+        # color to cyan for bot response
+        print(Fore.LIGHTCYAN_EX + "Your conversation partner said:", conversation[i][1])
+        # color to white for your response as the user
+        print(Fore.LIGHTWHITE_EX + "You said:", conversation[i + 1][1])
+        # color to magenta for the feedback
+        review_bot.listen(
+            """HUM: Given the following exchange between the bot and the AI, can you correct any mistakes the user made 
+                          as well as give them suggestions for how to improve their response and tell them to try again?
+                          Bot: {} User: {}""".format(
+                conversation[i][1], conversation[i + 1][1]
+            )
+        )
+        feedback = review_bot.speak()
+        print(Fore.LIGHTMAGENTA_EX + "Feedback:", feedback)
+
+        user_input = ""
+
+        while user_input == "" or detect(user_input) != "ja":
+            user_input = input(Fore.LIGHTWHITE_EX + "")
+            print(Style.RESET_ALL)
+            review_bot.listen(user_input)
+            feedback = review_bot.speak()
+            print(Fore.LIGHTMAGENTA_EX + "Feedback:", feedback)
+
+        print(Fore.CYAN)
+        try_again = input("Would you like to try again? (y/n): ")
+        if try_again == "y":
+            conversation[i + 1][1] = user_input
+        else:
+            i += 2
 
 
 load_dotenv()

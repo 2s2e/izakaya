@@ -1,7 +1,10 @@
 from datetime import datetime
+import os
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, BaseMessage
+import json
 
 
+# method for converting a list of messages to a string
 def convert_history_to_string(history: list[BaseMessage]) -> str:
     message_string = ""
     for message in history:
@@ -18,6 +21,24 @@ def convert_history_to_string(history: list[BaseMessage]) -> str:
     return message_string.strip()
 
 
+# convert a list of messages to a list of strings
+def convert_history_to_list(history: str) -> list[BaseMessage]:
+    toRet = []
+    for message in history:
+        if isinstance(message, AIMessage):
+            message_type = "AI"
+        elif isinstance(message, HumanMessage):
+            message_type = "Human"
+        elif isinstance(message, SystemMessage):
+            message_type = "System"
+        else:
+            message_type = "Unknown"
+
+        toRet.append([message_type, message.content])
+    return toRet
+
+
+# prompt for the target skill
 def get_target():
     print("Choose a target skill:")
     possible_targets = [
@@ -41,59 +62,49 @@ def get_target():
     return possible_targets[target_choice]
 
 
-def get_conversation_prompt():
-    possible_topics = [
-        "Vocabulary: work related conversation",
-        "Grammar: comparison",
-        "Grammar: past tense",
-        "Pick my own",
-    ]
+# prompt the user for the session to review
+def get_session_to_review():
+    session_files = os.listdir("../conversations")
+    files = []
+    for i, session_file in enumerate(session_files):
+        # only show json files
+        if session_file.endswith(".json"):
+            files.append(session_file)
 
-    print("Choose a topic:")
-    for i, topic in enumerate(possible_topics):
-        print(f"{i + 1}. {topic}")
+    for i, session_file in enumerate(files):
+        print(f"{i + 1}. {session_file}")
 
-    topic_choice = int(input("Enter the number of the topic you want to choose: ")) - 1
-
-    languages = ["Japanese", "Chinese", "Korean"]
-
-    conversation_prompt = """
-    You are a {language} conversation agent, who will teach the language  in the following situation:
-
-    You are a bartender an izakaya. The human you are talking to is a new customer. Welcome him in and make conversation with him.
-    As the bartender, you should be polite and professional. You should also be able to make small talk and engage in conversation with the customer.
-
-    You should make conversation in a way that drills the user on the following areas of the {language} language:
-    {topic}
-
-    If the user makes any significant mistakes, make sure to STAY IN CHARACTER, and ask for only ask for clarification if the mistake obstructs the conversation.
-
-    ONLY use {language} in your responses. Try to keep each of your phrases short, have a max of one inquiry per phrase.
-    """.format(
-        language=languages[0], topic=possible_topics[topic_choice]
+    session_choice = (
+        int(input("Enter the number of the session you want to review: ")) - 1
     )
 
-    return conversation_prompt
+    with open(f"../conversations/{files[session_choice]}", "r") as file:
+        data = json.load(file)
+        print(data)
+        conversation = data["conversation"]
+        feedback = data["feedback"]
+        prompt = data["prompt"]
+
+    return conversation, feedback, prompt
 
 
-def save_session(conversation_string, feedback_string, prompt_string):
-    filename = "../conversations/{}.txt".format(
-        datetime.now().strftime("transcript %Y-%m-%d_%H-%M-%S")
+# write everything to a single json file
+def save_session(conversation, feedback_string, prompt_string):
+    filename = "../conversations/{}.json".format(
+        datetime.now().strftime("session %Y-%m-%d_%H-%M-%S")
     )
 
-    filename2 = "../conversations/{}.txt".format(
-        datetime.now().strftime("feedback %Y-%m-%d_%H-%M-%S")
-    )
+    print(filename)
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-    filename3 = "../conversations/{}.txt".format(
-        datetime.now().strftime("prompt %Y-%m-%d_%H-%M-%S")
-    )
+    data = {}
+    conversation_list = convert_history_to_list(conversation)
+    data["conversation"] = conversation_list
+    data["prompt"] = prompt_string
+    data["feedback"] = feedback_string
 
-    with open(filename, "w", encoding="utf-8") as file:
-        file.write(conversation_string)
+    json_data = json.dumps(data, indent=4)
 
-    with open(filename2, "w", encoding="utf-8") as file:
-        file.write(feedback_string)
-
-    with open(filename3, "w", encoding="utf-8") as file:
-        file.write(prompt_string)
+    # write json_data to file
+    with open(filename, "w") as file:
+        file.write(json_data)
